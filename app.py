@@ -278,15 +278,15 @@ def get_crypto_prices():
 
         if response.status_code != 200:
             print(f"API error: {response.status_code}")
-            print(str(response))
-            print(str(response.json()))
+            # print(str(response))
+            # print(str(response.json()))
             return {}
 
-        print(response.text)
-        print(str(response.json()))
+        # print(response.text)
+        # print(str(response.json()))
         data = response.json().get("symbols", [])
 
-        print(data)
+        # print(data)
 
         prices = {}
         for coin in data:
