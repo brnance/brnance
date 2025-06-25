@@ -10,9 +10,16 @@ import socket
 from your_email_sms_sender import generate_otp, send_email_otp, send_sms_otp, update_email_verification, send_verification_email
 import razorpay
 from datetime import datetime
+import json
 
 app = Flask(__name__)
 app.secret_key = '9f2b123abc21ac14eaf98ddc8fc9013a2379beaad097d8cfd387d1b2cd4a751b'
+
+FREECRYPTO_URL = "https://api.freecryptoapi.com/v1/getData"
+HEADERS = {
+    # Optional if you have an API key
+    # "Authorization": "Bearer YOUR_ACCESS_TOKEN"
+}
 
 
 # Razorpay sandbox credentials
@@ -27,13 +34,6 @@ EMAIL_PASSWORD = 'brnance0987@'  # Use Gmail App Passwords
 def add_funds():
     if 'user' not in session:
         return redirect('/login')
-
-    # if request.method == 'POST':
-    #     amount = int(float(request.form['amount']) * 100)  # ₹ to paise
-
-    #     payment = client.order.create({'amount': amount, 'currency': 'INR', 'payment_capture': '1'})
-    #     return render_template('checkout.html', order=payment, key=RAZORPAY_KEY_ID)
-
     return render_template('add_funds.html')
 
 @app.route('/checkout', methods=['POST'])
@@ -102,14 +102,6 @@ def verify_email():
             entered_otp = request.form.get('otp')
             expected_otp = session.get('email_otp')
 
-            # user_otp = request.form['otp']
-            # if user_otp == session.get('email_otp'):
-            #     with sqlite3.connect("database.db") as conn:
-            #         conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
-            #     flash('Email verified successfully!', 'success')
-            #     return redirect(url_for('verify_phone'))
-            # else:
-            #     flash('Invalid OTP. Please try again.', 'danger')
             if entered_otp == expected_otp:
                 # Update user in DB
                 update_email_verification(session['email'])
@@ -144,21 +136,7 @@ def verify_phone():
         # phone = session.get('phone')
         print(session)
         phone = session['phone']
-        # if request.method == 'POST':
-        #     user_otp = request.form['otp']
-        #     if user_otp == session.get('phone_otp'):
-        #         with sqlite3.connect("database.db") as conn:
-        #             conn.execute("UPDATE users SET phone_verified = 1 WHERE phone = ?", (phone,))
-        #         flash('Phone number verified successfully!', 'success')
-        #         return redirect(url_for('dashboard'))
-        #     else:
-        #         flash('Invalid OTP. Please try again.', 'danger')
-
-        # # Send OTP only on GET or first-time POST
-        # if 'phone_otp' not in session:
-        #     otp = str(random.randint(100000, 999999))
-        #     session['phone_otp'] = otp
-        #     send_sms_otp(phone, otp)
+    
         if request.method == 'POST':
         # Step 2: User submitted the OTP
             user = session['user']
@@ -166,11 +144,6 @@ def verify_phone():
             correct_otp = session.get('phone_otp')
 
             if entered_otp == correct_otp:
-                # Mark phone as verified in DB (you should implement this)
-                # user = session['user']
-                # db = get_db()
-                # db.execute("UPDATE users SET phone_verified = 1 WHERE username = ?", (user,))
-                # db.commit()
                 with sqlite3.connect("database.db") as conn:
                     # cursor = conn.cursor()
                     cursor = conn.cursor()
@@ -254,30 +227,74 @@ def init_db():
             added_at TEXT
         )''')
 
-def get_crypto_prices(limit=100):
+# def get_crypto_prices(limit=100):
+#     try:
+#         url = "https://rest.coincap.io/v3/assets?apiKey=e294d9e936260b5dbb8f024991a1604b407e29661b53e6b5c1ceddc275ad7419"
+#         params = {
+#             "limit": limit
+#         }
+#         # print(url)
+#         response = requests.get(url, params=params)
+
+#         if response.status_code != 200:
+#             print(f"API error: {response.status_code}")
+#             # print(response.json())
+#             print(str(response))
+#             return {}
+
+#         data = response.json().get("data", [])
+
+        # prices = {}
+        # for coin in data:
+        #     symbol = coin['symbol'].upper()
+        #     prices[symbol] = {
+        #         "name": coin['name'],
+        #         "price": float(coin['priceUsd']),
+        #         "change": float(coin['changePercent24Hr']),
+        #         "image": f"https://assets.coincap.io/assets/icons/{symbol.lower()}@2x.png"
+        #     }
+
+#         return prices
+
+#     except Exception as e:
+#         print(f"Exception in get_crypto_prices: {e}")
+#         return {}  # ✅ Always return a dict to avoid crashing your template
+
+
+
+import requests
+
+def get_crypto_prices():
     try:
-        url = "https://rest.coincap.io/v3/assets?apiKey=e294d9e936260b5dbb8f024991a1604b407e29661b53e6b5c1ceddc275ad7419"
+        url = "https://api.freecryptoapi.com/v1/getData"
         params = {
-            "limit": limit
+        "symbol": "BTC ETH USDT XRP BNB SOL USDC TRX DOGE ADA HYPE BCH SUI LINK LEO XLM AVAX TON SHIB LTC DAI MATIC DOT WBTC ATOM ETC ICP NEAR CRO ARB VET OP FIL MNT RNDR OKB BGB IMX GRT INJ KAS MKR ALGO FTM AAVE EGLD AXS XTZ RPL NEO GALA FLOW CHZ RUNE KCS MINA DASH GMX IOTA CRV ZIL WAVES 1INCH HNT ENJ RVN CELO RSR KAVA ONE LUNC OMI OMG BAKE ICX PUNDIX SNX DODO SRM XVS BAL RAMP DENT IQ CLV HOT ARK XVG STMX LSK SNT CVC FET REP TRB NMR KEEP DPX KMD"
         }
-        # print(url)
-        response = requests.get(url, params=params)
+        headers = {
+            "Authorization": "Bearer 7z2o0444x29y5a1d6i22"  # if required
+        }
+
+        response = requests.get(url, params=params, headers=headers)
 
         if response.status_code != 200:
             print(f"API error: {response.status_code}")
-            # print(response.json())
             print(str(response))
+            print(str(response.json()))
             return {}
 
-        data = response.json().get("data", [])
+        print(response.text)
+        print(str(response.json()))
+        data = response.json().get("symbols", [])
+
+        print(data)
 
         prices = {}
         for coin in data:
             symbol = coin['symbol'].upper()
             prices[symbol] = {
-                "name": coin['name'],
-                "price": float(coin['priceUsd']),
-                "change": float(coin['changePercent24Hr']),
+                "name": symbol,
+                "price": float(coin['last']),
+                "change": float(coin['daily_change_percentage']),
                 "image": f"https://assets.coincap.io/assets/icons/{symbol.lower()}@2x.png"
             }
 
@@ -285,9 +302,9 @@ def get_crypto_prices(limit=100):
 
     except Exception as e:
         print(f"Exception in get_crypto_prices: {e}")
-        return {}  # ✅ Always return a dict to avoid crashing your template
+        return {}
 
-        
+
 
 @app.route('/')
 def home():
@@ -536,12 +553,6 @@ def dashboard():
     paginated_symbols = sorted_symbols[start:end]
     paginated_prices = {symbol: prices[symbol] for symbol in paginated_symbols}
     
-    # return render_template("dashboard.html",
-    #                        user=username,
-    #                        prices=prices,
-    #                        email_verified=email_verified,
-    #                        phone_verified=phone_verified,
-    #                        watchlist=watchlist)
     return render_template("dashboard.html",
                            user=username,
                            prices=paginated_prices,
